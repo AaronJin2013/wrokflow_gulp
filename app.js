@@ -1,28 +1,28 @@
 var koa = require('koa');
 var app = koa();
+var path = require('path');
+var static = require('koa-static');
+var render = require('koa-swig');
 
-// x-response-time
+var router =require('koa-router')();
 
-app.use(function *(next){
-    var start = new Date;
-    yield next;
-    var ms = new Date - start;
-    this.set('X-Response-Time', ms + 'ms');
+app.context.render = render({
+    root: path.join(__dirname, 'views'),
+    autoescape: true,
+    cache: 'memory', // disable, set to false
+    ext: 'html'
 });
 
-// logger
 
-app.use(function *(next){
-    var start = new Date;
-    yield next;
-    var ms = new Date - start;
-    console.log('%s %s - %s', this.method, this.url, ms);
+app.use(static(path.join(__dirname, '/src')));
+
+router.get('/*', function *(next) {
+    yield this.render(__dirname+'/index');
 });
 
-// response
-
-app.use(function *(){
-    this.body = 'Hello World';
-});
-
+app
+    .use(router.routes())
+    .use(router.allowedMethods());
 app.listen(3000);
+
+console.log('listening on port 3000');
