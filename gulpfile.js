@@ -15,86 +15,100 @@ var gulp = require('gulp'),
     notify = require('gulp-notify'),
     cache = require('gulp-cache'),
     livereload = require('gulp-livereload'),
-    bourbon=require('node-bourbon'),
+    nodemon = require('gulp-nodemon'),
+    bourbon = require('node-bourbon'),
     karma = require('karma').server;
 
 
-// 守望者
-gulp.task('watch', function() {
-    gulp.watch('src/styles/**/*.scss', ['styles']);
-    gulp.watch('src/scripts/**/*.js', ['scripts']);
-    gulp.watch('src/images/**/*', ['images']);
-
-    //var server = livereload();
-    //// 看守所有位在 dist/  目录下的档案，一旦有更动，便进行重整
-    //gulp.watch(['public/**']).on('change', function(file) {
-    //    server.changed(file.path);
-    //});
+gulp.task('run', ['nodemon'], function () {
+    livereload.listen({basePath: 'assert'});
+    gulp.watch('source/styles/**/*.scss', ['styles']);
+    gulp.watch('source/scripts/**/*.js', ['scripts']);
+});
+gulp.task('reload', function () {
+    gulp.pipe(livereload());
 });
 
 gulp.task('styles',function(){
-    return gulp.src('src/styles/**/*.scss')
+    return gulp.src('source/styles/**/*.scss')
         .pipe(sass({ style: 'expanded',includePaths: bourbon.includePaths}))
         .on('error', swallowError)
         .pipe(autoprefixer())
         //.pipe(autoprefixer('last 2 version', 'safari 5', 'ie 8', 'ie 9', 'opera 12.1', 'ios 6', 'android 4'))
         .pipe(concat('main.css'))
-        .pipe(gulp.dest('public/styles'))
+        .pipe(gulp.dest('tmp/styles'))
         .pipe(rename({ suffix: '.min' }))
         .pipe(minifycss())
-        .pipe(gulp.dest('public/styles'))
-        .pipe(notify({ message: 'Styles task complete' }));
+        .pipe(gulp.dest('assets/styles'))
+        .pipe(notify({ message: 'Styles task complete' }))
+        .pipe(livereload());
 });
 
 gulp.task('scripts', function() {
-    return gulp.src('src/scripts/**/*.js')
+    return gulp.src('source/scripts/**/*.js')
         .pipe(jshint('.jshintrc'))
         .pipe(jshint.reporter('default'))
         .pipe(concat('main.js'))
-        .pipe(gulp.dest('public/scripts'))
+        .pipe(gulp.dest('tmp/scripts'))
         .pipe(rename({ suffix: '.min' }))
         .pipe(uglify())
         .on('error', swallowError)
-        .pipe(gulp.dest('public/scripts'))
-        .pipe(notify({ message: 'Scripts task complete' }));
+        .pipe(gulp.dest('assets/scripts'))
+        .pipe(notify({ message: 'Scripts task complete' }))
+        .pipe(livereload());
 });
 
-// 图片
-gulp.task('images', function() {
-    return gulp.src('src/images/**/*')
-        .pipe(cache(imagemin({ optimizationLevel: 5, progressive: true, interlaced: true })))
-        .on('error', swallowError)
-        .pipe(gulp.dest('public/images'))
-        .pipe(notify({ message: 'Images task complete' }));
-});
-
-// 清理
-gulp.task('clean', function() {
-    return gulp.src(['public/styles', 'public/scripts', 'public/images'], {read: false})
-        .pipe(clean());
-});
-
-// 预设任务
-gulp.task('default', ['clean'], function() {
-    gulp.start('styles', 'scripts', 'images');
-});
+gulp.task('nodemon', function () {
+    nodemon({
+        script: 'app.js',
+        ext: 'html js',
+        ignore: ['source/**/*.*','tmp/**/*.*'],
+        tasks: ['reload']
+    })
+        .on('restart', function () {
+            console.log('restarted!');
+        })
+})
 
 
-gulp.task('test', function () {
-    karma.start({
-        configFile: __dirname + '/karma.conf.js'
-        ,singleRun: true
-    }, karmaExit);
-});
 
+//
+//// 图片
+//gulp.task('images', function() {
+//    return gulp.src('src/images/**/*')
+//        .pipe(cache(imagemin({ optimizationLevel: 5, progressive: true, interlaced: true })))
+//        .on('error', swallowError)
+//        .pipe(gulp.dest('public/images'))
+//        .pipe(notify({ message: 'Images task complete' }));
+//});
+//
+//// 清理
+//gulp.task('clean', function() {
+//    return gulp.src(['public/styles', 'public/scripts', 'public/images'], {read: false})
+//        .pipe(clean());
+//});
+//
+//// 预设任务
+//gulp.task('default', ['clean'], function() {
+//    gulp.start('styles', 'scripts', 'images');
+//});
+//
+//
+//gulp.task('test', function () {
+//    karma.start({
+//        configFile: __dirname + '/karma.conf.js'
+//        ,singleRun: true
+//    }, karmaExit);
+//});
+//
+//
+//function karmaExit(exitCode) {
+//    gutil.log('Karma has exited with ' + exitCode);
+//    //process.exit(exitCode);
+//}
+//
 
-function karmaExit(exitCode) {
-    gutil.log('Karma has exited with ' + exitCode);
-    //process.exit(exitCode);
-}
-
-
-function swallowError (error) {
+function swallowError(error) {
 
     //If you want details of the error in the console
     console.log(error.toString());
