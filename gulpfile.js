@@ -20,13 +20,59 @@ var gulp = require('gulp'),
     karma = require('karma').server;
 
 
-gulp.task('run', ['nodemon'], function () {
-    livereload.listen({basePath: 'assert'});
+var paths = {
+    client: [
+        'source/styles/**/*.scss',
+        'source/scripts/**/*.js'
+    ],
+    server: {
+        index: 'app.js'
+    }
+};
+
+// nodemon 的配置
+var nodemonConfig = {
+    script : paths.server.index,
+    ignore : [
+        "tmp/**",
+        "public/**",
+        "source/**",
+        "views/**"
+    ],
+    env    : {
+        "NODE_ENV": "development"
+    }
+};
+
+// 使用 nodemone 跑起服务器
+gulp.task('serve', ['livereload'], function() {
+    console.log('run');
+    return nodemon(nodemonConfig)
+        .on('restart', function () {
+            console.log('restarted!');
+        });
+});
+
+// 当客户端被监听的文件改变时，刷新浏览器
+gulp.task('livereload', function() {
+    console.log('livereload');
+    livereload.listen({ start: true });
+    //var server = livereload();
+    //return gulp.watch(paths.client, function(event) {
+    //    livereload.changed(event.path);
+    //    //server.changed();
+    //});
+
     gulp.watch('source/styles/**/*.scss', ['styles']);
     gulp.watch('source/scripts/**/*.js', ['scripts']);
 });
+
+gulp.task('run', ['serve', 'livereload']);
+
 gulp.task('reload', function () {
-    gulp.pipe(livereload());
+    livereload.listen({basePath: 'assert'});
+    gulp.watch('source/styles/**/*.scss', ['styles']);
+    gulp.watch('source/scripts/**/*.js', ['scripts']);
 });
 
 gulp.task('styles',function(){
@@ -41,7 +87,7 @@ gulp.task('styles',function(){
         .pipe(minifycss())
         .pipe(gulp.dest('assets/styles'))
         .pipe(notify({ message: 'Styles task complete' }))
-        .pipe(livereload());
+        .pipe(livereload.changed());
 });
 
 gulp.task('scripts', function() {
@@ -55,20 +101,8 @@ gulp.task('scripts', function() {
         .on('error', swallowError)
         .pipe(gulp.dest('assets/scripts'))
         .pipe(notify({ message: 'Scripts task complete' }))
-        .pipe(livereload());
+        .pipe(livereload.changed());
 });
-
-gulp.task('nodemon', function () {
-    nodemon({
-        script: 'app.js',
-        ext: 'html js',
-        ignore: ['source/**/*.*','tmp/**/*.*'],
-        tasks: ['reload']
-    })
-        .on('restart', function () {
-            console.log('restarted!');
-        })
-})
 
 
 

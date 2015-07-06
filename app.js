@@ -14,7 +14,7 @@ app.context.render = render({
 });
 
 
-app.use(static(path.join(__dirname, '/src')));
+router.use(static(path.join(__dirname, '/assets')));
 
 router.get('/*', function *(next) {
     yield this.render(__dirname+'/index');
